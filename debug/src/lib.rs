@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::{quote, ToTokens};
+use quote::quote;
 
 use proc_macro2;
 use syn;
@@ -40,9 +40,22 @@ impl DebugField {
     }
 }
 
+fn add_trait_buond(mut generics: syn::Generics) -> syn::Generics {
+    for param in &mut generics.params {
+        if let syn::GenericParam::Type(type_param) = param {
+            type_param.bounds.push(syn::parse_quote!(::std::fmt::Debug))
+        }
+    }
+    generics
+}
+
 #[proc_macro_derive(CustomDebug, attributes(debug))]
 pub fn derive(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
+
+    let generics = add_trait_buond(input.generics);
+
+    let (impl_gen, type_gen, where_clause) = generics.split_for_impl();
 
     let fields = match input.data {
         syn::Data::Struct(syn::DataStruct { fields, .. }) => fields,
@@ -75,7 +88,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let struct_name = input.ident.clone();
 
     (quote! {
-        impl ::std::fmt::Debug for #struct_name {
+        impl #impl_gen ::std::fmt::Debug for #struct_name #type_gen #where_clause {
             fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                 fmt.debug_struct(stringify!(#struct_name))
                 #(#fields)*

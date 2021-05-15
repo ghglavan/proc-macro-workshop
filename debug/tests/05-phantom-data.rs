@@ -62,6 +62,14 @@ pub struct Field<T> {
     bitmask: u8,
 }
 
+#[derive(CustomDebug)]
+pub struct Field2<T> {
+    marker: T,
+    string: S,
+    #[debug = "0b{:08b}"]
+    bitmask: u8,
+}
+
 fn assert_debug<F: Debug>() {}
 
 fn main() {
@@ -70,4 +78,5 @@ fn main() {
 
     assert_debug::<PhantomData<NotDebug>>();
     assert_debug::<Field<NotDebug>>();
+    assert_debug::<Field2<u8>>();
 }
